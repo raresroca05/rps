@@ -7,6 +7,8 @@ class GamesController < ApplicationController
 
   def play
     player_throw = validate_throw_param!
+    return unless player_throw
+
     opponent_result = Api::ThrowClient.fetch
 
     @result = Game::Resolver.new(
