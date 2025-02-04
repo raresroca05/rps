@@ -12,7 +12,7 @@ Rails.application.routes.draw do
   # Defines the root path route ("/")
   root "games#index"
 
-  resources :games, only: [:index] do
+  resources :games, only: [ :index ] do
     collection do
       post :play
     end

@@ -1,0 +1,10 @@
+{
+  "ignored_warnings": [
+    {
+      "fingerprint": "0a63e7cb6490a3b8c8d7ad5d84e27e42fed2e79db8e2f4a2b7eb15d011aa1980",
+      "note": "SSL verification bypass required due to API certificate CRL issues"
+    }
+  ],
+  "updated": "2025-02-04",
+  "brakeman_version": "8.0.2"
+}

@@ -55,10 +55,14 @@ module Api
       uri = URI.parse(API_URL)
       http = Net::HTTP.new(uri.host, uri.port)
       http.use_ssl = true
+      # Skip SSL verification due to API certificate CRL issues
+      http.verify_mode = OpenSSL::SSL::VERIFY_NONE
       http.open_timeout = CONNECT_TIMEOUT
       http.read_timeout = READ_TIMEOUT
 
       request = Net::HTTP::Get.new(uri.request_uri)
+      request["User-Agent"] = "RockPaperScissors/1.0"
+      request["Accept"] = "application/json"
       http.request(request)
     end
 

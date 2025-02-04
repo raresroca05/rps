@@ -1,11 +1,10 @@
-<div class="min-h-screen bg-white py-16 px-4">
-  <div class="max-w-4xl mx-auto opacity-30">
-    <!-- Faded Background Content -->
-    <h1 class="font-montserrat font-medium text-5xl text-purple-dark tracking-wide mb-8">
+<div class="min-h-screen bg-white flex items-center justify-center py-16 px-4">
+  <div class="max-w-4xl w-full opacity-30">
+    <h1 class="font-montserrat font-medium text-5xl text-purple-dark tracking-wide mb-8 text-center">
       ROCK &ndash; PAPER &ndash; SCISSORS
     </h1>
 
-    <p class="font-roboto font-light text-xl leading-8 text-black/55 mb-16 max-w-3xl">
+    <p class="font-roboto font-light text-xl leading-8 text-black/55 mb-16 max-w-3xl mx-auto text-center">
       Rock Paper Scissors is a zero sum game that is usually played by two people
       using their hands and no tools. The idea is to make shapes with an outstretched
       hand where each shape will have a certain degree of power and will lead to an
@@ -22,7 +21,6 @@
     </div>
   </div>
 
-  <!-- Result Modal -->
   <div class="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
     <div class="bg-white rounded-lg shadow-xl p-8 max-w-md w-full mx-4 relative">
       <a href="<%= root_path %>" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
@@ -31,7 +29,6 @@
         </svg>
       </a>
 
-      <!-- Result Message -->
       <h3 class="font-roboto font-bold text-2xl text-purple-dark text-center mb-2 uppercase">
         <% if @result.win? %>
           You Won!
@@ -52,13 +49,11 @@
         <% end %>
       </p>
 
-      <!-- Winning Hand Icon -->
       <div class="flex justify-center mb-8">
         <% winning_throw = @result.win? ? @result.player_throw : @result.opponent_throw %>
         <%= render "games/icons/#{winning_throw}" %>
       </div>
 
-      <!-- Ok Button -->
       <%= link_to "Ok", root_path, class: "block w-full bg-purple-button text-white font-roboto font-medium text-lg py-4 rounded text-center hover:bg-purple-dark transition-colors" %>
     </div>
   </div>

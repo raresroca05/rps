@@ -1,11 +1,9 @@
 <div class="min-h-screen bg-white flex items-center justify-center py-16 px-4" data-controller="game">
   <div class="max-w-4xl w-full">
-    <!-- Title -->
     <h1 class="font-montserrat font-medium text-5xl text-purple-dark tracking-wide mb-8 text-center">
       ROCK &ndash; PAPER &ndash; SCISSORS
     </h1>
 
-    <!-- Description -->
     <p class="font-roboto font-light text-xl leading-8 text-black/55 mb-16 max-w-3xl mx-auto text-center">
       Rock Paper Scissors is a zero sum game that is usually played by two people
       using their hands and no tools. The idea is to make shapes with an outstretched
@@ -13,7 +11,6 @@
       outcome.
     </p>
 
-    <!-- Select Your Bet -->
     <h2 class="font-roboto font-medium text-lg text-black text-center mb-10 uppercase tracking-wider">
       Select Your Bet
     </h2>
@@ -24,7 +21,6 @@
       </div>
     <% end %>
 
-    <!-- Throw Selection -->
     <%= form_with url: play_games_path, method: :post, data: { turbo: false, action: "submit->game#submit" }, id: "game-form" do |f| %>
       <div class="flex justify-center gap-8">
         <% [:rock, :paper, :scissors].each do |throw_name| %>
@@ -40,27 +36,10 @@
             <span class="font-roboto text-purple-dark text-lg capitalize"><%= throw_name %></span>
           </button>
         <% end %>
-
-        <%# Hammer - 4th option demonstrating extensibility %>
-        <%# To enable hammer, uncomment below and add :hammer to the throws array above %>
-        <%#
-        <button type="submit"
-                name="throw"
-                value="hammer"
-                class="group flex flex-col items-center p-8 rounded-lg hover:bg-gray-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-dark/30 disabled:opacity-30 disabled:cursor-not-allowed"
-                data-game-target="button"
-                data-throw="hammer">
-          <div class="mb-4">
-            <%= render "games/icons/hammer" %>
-          </div>
-          <span class="font-roboto text-purple-dark text-lg capitalize">hammer</span>
-        </button>
-        %>
       </div>
     <% end %>
   </div>
 
-  <!-- Loading Modal -->
   <div id="loading-modal" class="hidden fixed inset-0 bg-black/30 flex items-center justify-center z-50" data-game-target="loadingModal">
     <div class="bg-white rounded-lg shadow-xl p-8 max-w-lg w-full mx-4 border-2 border-blue-400 relative">
       <button type="button" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600" data-action="click->game#closeModal">
@@ -76,7 +55,6 @@
       <div class="flex justify-around items-center mb-8">
         <div class="text-center">
           <div id="player-throw-icon" class="mb-2">
-            <!-- Player's throw icon will be inserted here -->
           </div>
           <span class="font-roboto text-purple-dark">Your bet</span>
         </div>

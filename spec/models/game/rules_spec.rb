@@ -87,19 +87,19 @@ RSpec.describe Game::Rules do
 
   describe ".what_beats" do
     it "returns what rock beats" do
-      expect(Game::Rules.what_beats(:rock)).to eq([:scissors])
+      expect(Game::Rules.what_beats(:rock)).to eq([ :scissors ])
     end
 
     it "returns what paper beats" do
-      expect(Game::Rules.what_beats(:paper)).to eq([:rock, :hammer])
+      expect(Game::Rules.what_beats(:paper)).to eq([ :rock, :hammer ])
     end
 
     it "returns what scissors beats" do
-      expect(Game::Rules.what_beats(:scissors)).to eq([:paper])
+      expect(Game::Rules.what_beats(:scissors)).to eq([ :paper ])
     end
 
     it "returns what hammer beats" do
-      expect(Game::Rules.what_beats(:hammer)).to eq([:scissors, :rock])
+      expect(Game::Rules.what_beats(:hammer)).to eq([ :scissors, :rock ])
     end
 
     it "returns empty array for invalid throw" do

@@ -10,7 +10,7 @@ export default class GameController extends Controller {
 
   private selectedThrow: string | null = null
 
-  submit(event: Event): void {
+  submit(event: SubmitEvent): void {
     // Prevent default form submission
     event.preventDefault()
 

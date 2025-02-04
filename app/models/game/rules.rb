@@ -39,8 +39,9 @@ module Game
       end
 
       # Get a random throw (used for fallback)
+      # Only returns classic throws (rock, paper, scissors) to match API behavior
       def random_throw
-        throws.sample
+        %i[rock paper scissors].sample
       end
     end
   end
