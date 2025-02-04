@@ -5,10 +5,13 @@ module Game
   # Designed for extensibility: adding new throws requires only updating RULES
   class Rules
     # Each key is a throw, and its value is an array of throws it beats
+    # Extensibility: Adding a new throw only requires adding it here
+    # Example: hammer beats scissors and rock, but loses to paper
     RULES = {
-      rock: [:scissors],
-      paper: [:rock],
-      scissors: [:paper]
+      rock: [ :scissors ],
+      paper: [ :rock, :hammer ],
+      scissors: [ :paper ],
+      hammer: [ :scissors, :rock ]
     }.freeze
 
     class << self

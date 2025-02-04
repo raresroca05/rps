@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@theme {
+  --font-montserrat: "Montserrat", sans-serif;
+  --font-roboto: "Roboto", sans-serif;
+
+  --color-purple-dark: #36006C;
+  --color-purple-button: #3D1066;
+  --color-curb-green: #00B090;
+  --color-text-muted: rgba(0, 0, 0, 0.54);
+
+  --color-cuff-blue: #5B9BD5;
+  --color-cuff-pink: #E6A0B0;
+  --color-cuff-green: #A8D5B0;
+}

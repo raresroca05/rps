@@ -1,43 +1,95 @@
-<div class="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 flex items-center justify-center p-4">
-  <div class="max-w-2xl w-full" data-controller="game">
-    <div class="text-center mb-12">
-      <h1 class="text-5xl font-bold text-white mb-4">Rock Paper Scissors</h1>
-      <p class="text-purple-200 text-lg">Choose your throw to play against the computer</p>
-    </div>
+<div class="min-h-screen bg-white flex items-center justify-center py-16 px-4" data-controller="game">
+  <div class="max-w-4xl w-full">
+    <!-- Title -->
+    <h1 class="font-montserrat font-medium text-5xl text-purple-dark tracking-wide mb-8 text-center">
+      ROCK &ndash; PAPER &ndash; SCISSORS
+    </h1>
+
+    <!-- Description -->
+    <p class="font-roboto font-light text-xl leading-8 text-black/55 mb-16 max-w-3xl mx-auto text-center">
+      Rock Paper Scissors is a zero sum game that is usually played by two people
+      using their hands and no tools. The idea is to make shapes with an outstretched
+      hand where each shape will have a certain degree of power and will lead to an
+      outcome.
+    </p>
+
+    <!-- Select Your Bet -->
+    <h2 class="font-roboto font-medium text-lg text-black text-center mb-10 uppercase tracking-wider">
+      Select Your Bet
+    </h2>
 
     <% if flash[:alert] %>
-      <div class="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-6 text-center">
+      <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6 text-center">
         <%= flash[:alert] %>
       </div>
     <% end %>
 
-    <div id="game-area">
-      <%= form_with url: play_games_path, method: :post, data: { turbo_frame: "_top", action: "submit->game#submit" } do |f| %>
-        <div class="grid grid-cols-3 gap-6 mb-8">
-          <% @throws.each do |throw_name| %>
-            <button type="submit"
-                    name="throw"
-                    value="<%= throw_name %>"
-                    class="group relative bg-white/10 backdrop-blur-sm border-2 border-white/20 rounded-2xl p-6 hover:bg-white/20 hover:border-white/40 transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-purple-400/50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    data-game-target="button">
-              <div class="flex flex-col items-center">
-                <%= render "games/icons/#{throw_name}" %>
-                <span class="mt-4 text-white font-semibold text-lg capitalize"><%= throw_name %></span>
-              </div>
-            </button>
-          <% end %>
+    <!-- Throw Selection -->
+    <%= form_with url: play_games_path, method: :post, data: { turbo: false, action: "submit->game#submit" }, id: "game-form" do |f| %>
+      <div class="flex justify-center gap-8">
+        <% [:rock, :paper, :scissors].each do |throw_name| %>
+          <button type="submit"
+                  name="throw"
+                  value="<%= throw_name %>"
+                  class="group flex flex-col items-center p-8 rounded-lg hover:bg-gray-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-dark/30 disabled:opacity-30 disabled:cursor-not-allowed"
+                  data-game-target="button"
+                  data-throw="<%= throw_name %>">
+            <div class="mb-4">
+              <%= render "games/icons/#{throw_name}" %>
+            </div>
+            <span class="font-roboto text-purple-dark text-lg capitalize"><%= throw_name %></span>
+          </button>
+        <% end %>
+
+        <%# Hammer - 4th option demonstrating extensibility %>
+        <%# To enable hammer, uncomment below and add :hammer to the throws array above %>
+        <%#
+        <button type="submit"
+                name="throw"
+                value="hammer"
+                class="group flex flex-col items-center p-8 rounded-lg hover:bg-gray-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-dark/30 disabled:opacity-30 disabled:cursor-not-allowed"
+                data-game-target="button"
+                data-throw="hammer">
+          <div class="mb-4">
+            <%= render "games/icons/hammer" %>
+          </div>
+          <span class="font-roboto text-purple-dark text-lg capitalize">hammer</span>
+        </button>
+        %>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Loading Modal -->
+  <div id="loading-modal" class="hidden fixed inset-0 bg-black/30 flex items-center justify-center z-50" data-game-target="loadingModal">
+    <div class="bg-white rounded-lg shadow-xl p-8 max-w-lg w-full mx-4 border-2 border-blue-400 relative">
+      <button type="button" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600" data-action="click->game#closeModal">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+
+      <h3 class="font-roboto font-medium text-xl text-purple-dark text-center mb-8 uppercase">
+        Waiting Curb's Choose
+      </h3>
+
+      <div class="flex justify-around items-center mb-8">
+        <div class="text-center">
+          <div id="player-throw-icon" class="mb-2">
+            <!-- Player's throw icon will be inserted here -->
+          </div>
+          <span class="font-roboto text-purple-dark">Your bet</span>
         </div>
 
-        <div class="hidden text-center" data-game-target="loading">
-          <div class="inline-flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-full px-6 py-3">
-            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span class="text-white">Waiting for opponent...</span>
+        <div class="text-center">
+          <div class="flex gap-1 mb-2 justify-center py-8">
+            <span class="w-3 h-3 bg-purple-dark rounded-full animate-bounce" style="animation-delay: 0ms"></span>
+            <span class="w-3 h-3 bg-purple-dark/50 rounded-full animate-bounce" style="animation-delay: 150ms"></span>
+            <span class="w-3 h-3 bg-purple-dark/30 rounded-full animate-bounce" style="animation-delay: 300ms"></span>
           </div>
+          <span class="font-roboto font-medium text-xl text-curb-green">curb</span>
         </div>
-      <% end %>
+      </div>
     </div>
   </div>
 </div>

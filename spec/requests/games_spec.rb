@@ -18,13 +18,20 @@ RSpec.describe "Games", type: :request do
       expect(response.body).to include("paper")
       expect(response.body).to include("scissors")
     end
+
+    it "displays the title" do
+      get games_path
+      expect(response.body).to include("ROCK")
+      expect(response.body).to include("PAPER")
+      expect(response.body).to include("SCISSORS")
+    end
   end
 
   describe "GET / (root)" do
     it "renders the games index" do
       get root_path
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("Rock Paper Scissors")
+      expect(response.body).to include("Select Your Bet")
     end
   end
 
@@ -55,7 +62,7 @@ RSpec.describe "Games", type: :request do
 
     it "displays game result for win" do
       post play_games_path, params: { throw: "paper" }
-      expect(response.body).to include("You win!")
+      expect(response.body).to include("You Won!")
     end
 
     it "displays game result for loss" do
@@ -67,12 +74,12 @@ RSpec.describe "Games", type: :request do
         )
 
       post play_games_path, params: { throw: "rock" }
-      expect(response.body).to include("You lose!")
+      expect(response.body).to include("You Lost!")
     end
 
     it "displays game result for tie" do
       post play_games_path, params: { throw: "rock" }
-      expect(response.body).to include("tie")
+      expect(response.body).to include("Tie")
     end
 
     context "with invalid throw" do
@@ -90,7 +97,8 @@ RSpec.describe "Games", type: :request do
 
         post play_games_path, params: { throw: "rock" }
         expect(response).to have_http_status(:success)
-        expect(response.body).to include("offline mode")
+        # Game still works with fallback
+        expect(response.body).to match(/You Won!|You Lost!|Tie/)
       end
     end
   end

@@ -17,10 +17,7 @@ class GamesController < ApplicationController
     )
     @used_fallback = opponent_result.fallback?
 
-    respond_to do |format|
-      format.html { render :result }
-      format.turbo_stream { render :result }
-    end
+    render :result
   end
 
   private
