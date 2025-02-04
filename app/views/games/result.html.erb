@@ -1,0 +1,57 @@
+<div class="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 flex items-center justify-center p-4">
+  <div class="max-w-2xl w-full">
+    <div class="text-center mb-8">
+      <h1 class="text-5xl font-bold text-white mb-4">Rock Paper Scissors</h1>
+    </div>
+
+    <% result_color = @result.win? ? "emerald" : (@result.lose? ? "red" : "yellow") %>
+
+    <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-3xl p-8 mb-8">
+      <div class="grid grid-cols-3 gap-4 items-center mb-8">
+        <div class="text-center">
+          <p class="text-purple-200 text-sm mb-2 uppercase tracking-wide">You</p>
+          <div class="bg-white/10 rounded-2xl p-4 inline-block">
+            <%= render "games/icons/#{@result.player_throw}" %>
+          </div>
+          <p class="mt-2 text-white font-semibold capitalize"><%= @result.player_throw %></p>
+        </div>
+
+        <div class="text-center">
+          <p class="text-4xl font-bold text-white">VS</p>
+        </div>
+
+        <div class="text-center">
+          <p class="text-purple-200 text-sm mb-2 uppercase tracking-wide">Opponent</p>
+          <div class="bg-white/10 rounded-2xl p-4 inline-block">
+            <%= render "games/icons/#{@result.opponent_throw}" %>
+          </div>
+          <p class="mt-2 text-white font-semibold capitalize"><%= @result.opponent_throw %></p>
+        </div>
+      </div>
+
+      <div class="text-center py-6 px-4 rounded-2xl bg-<%= result_color %>-500/20 border border-<%= result_color %>-500/40">
+        <p class="text-3xl font-bold text-<%= result_color %>-400"><%= @result.result_message %></p>
+      </div>
+
+      <% if @used_fallback %>
+        <p class="text-center text-purple-300/70 text-sm mt-4">
+          <span class="inline-flex items-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Playing in offline mode
+          </span>
+        </p>
+      <% end %>
+    </div>
+
+    <div class="text-center">
+      <%= link_to root_path, class: "inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white font-semibold px-8 py-4 rounded-xl transition-all duration-300 hover:scale-105" do %>
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        Play Again
+      <% end %>
+    </div>
+  </div>
+</div>

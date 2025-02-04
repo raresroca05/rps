@@ -1,0 +1,43 @@
+<div class="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 flex items-center justify-center p-4">
+  <div class="max-w-2xl w-full" data-controller="game">
+    <div class="text-center mb-12">
+      <h1 class="text-5xl font-bold text-white mb-4">Rock Paper Scissors</h1>
+      <p class="text-purple-200 text-lg">Choose your throw to play against the computer</p>
+    </div>
+
+    <% if flash[:alert] %>
+      <div class="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-6 text-center">
+        <%= flash[:alert] %>
+      </div>
+    <% end %>
+
+    <div id="game-area">
+      <%= form_with url: play_games_path, method: :post, data: { turbo_frame: "_top", action: "submit->game#submit" } do |f| %>
+        <div class="grid grid-cols-3 gap-6 mb-8">
+          <% @throws.each do |throw_name| %>
+            <button type="submit"
+                    name="throw"
+                    value="<%= throw_name %>"
+                    class="group relative bg-white/10 backdrop-blur-sm border-2 border-white/20 rounded-2xl p-6 hover:bg-white/20 hover:border-white/40 transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-purple-400/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    data-game-target="button">
+              <div class="flex flex-col items-center">
+                <%= render "games/icons/#{throw_name}" %>
+                <span class="mt-4 text-white font-semibold text-lg capitalize"><%= throw_name %></span>
+              </div>
+            </button>
+          <% end %>
+        </div>
+
+        <div class="hidden text-center" data-game-target="loading">
+          <div class="inline-flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-full px-6 py-3">
+            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span class="text-white">Waiting for opponent...</span>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
