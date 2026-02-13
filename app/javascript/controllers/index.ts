@@ -4,6 +4,5 @@
 
 import { application } from "./application"
 
-// Import and register controllers here
-// Example: import GameController from "./game_controller"
-// application.register("game", GameController)
+import GameController from "./game_controller"
+application.register("game", GameController)
