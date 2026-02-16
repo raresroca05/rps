@@ -1,48 +1,10 @@
 # frozen_string_literal: true
 
 module Game
-  # Registry defining game rules - what beats what
-  # Designed for extensibility: adding new throws requires only updating RULES
-  class Rules
-    # Each key is a throw, and its value is an array of throws it beats
-    # Extensibility: Adding a new throw only requires adding it here
-    # Example: hammer beats scissors and rock, but loses to paper
-    RULES = {
-      rock: [ :scissors ],
-      paper: [ :rock, :hammer ],
-      scissors: [ :paper ],
-      hammer: [ :scissors, :rock ]
-    }.freeze
-
-    class << self
-      # Get all valid throw names
-      def throws
-        RULES.keys
-      end
-
-      # Check if a throw name is valid
-      def valid_throw?(name)
-        RULES.key?(name.to_sym)
-      end
-
-      # Check if throw1 beats throw2
-      def beats?(throw1, throw2)
-        throw1 = throw1.to_sym
-        throw2 = throw2.to_sym
-
-        RULES[throw1]&.include?(throw2) || false
-      end
-
-      # Get what a specific throw beats
-      def what_beats(throw_name)
-        RULES[throw_name.to_sym] || []
-      end
-
-      # Get a random throw (used for fallback)
-      # Only returns classic throws (rock, paper, scissors) to match API behavior
-      def random_throw
-        %i[rock paper scissors].sample
-      end
-    end
-  end
+  # Backward-compatible alias for GameCore::Domain::Rules
+  # Delegates to the engine's implementation
+  #
+  # @see GameCore::Domain::Rules for the actual implementation
+  #
+  Rules = GameCore::Domain::Rules
 end
