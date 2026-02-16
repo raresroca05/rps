@@ -1,6 +1,6 @@
 # Rock Paper Scissors
 
-A web-based application that allows a user to play Rock-Paper-Scissors against a server API. Built with Rails 8 and Hotwire, featuring a clean three-layer architecture with resilient API integration and offline fallback capabilities.
+A web-based application that allows a user to play Rock-Paper-Scissors against a server API. Built with Rails 8 and Hotwire, featuring a **Rails Engines architecture** with Domain-Driven Design (DDD), comprehensive Design Patterns, and SOLID principles throughout.
 
 ## Features
 
@@ -8,45 +8,210 @@ A web-based application that allows a user to play Rock-Paper-Scissors against a
 - **Offline Fallback**: Automatically falls back to local random generation when API is unavailable
 - **Extensible Design**: Add new throws (like "hammer") by updating a single registry
 - **Progressive Enhancement**: Works without JavaScript; JS adds polish and interactivity
+- **Modular Architecture**: Rails Engines enable extraction and reuse
 
 ## Architecture Overview
 
-This project follows a clean three-layer architecture that separates concerns and enables independent testing of each layer:
+This project implements a **modular monolith** using Rails Engines, following Domain-Driven Design principles:
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Presentation Layer                        │
-│         GamesController + Hotwire (Turbo + Stimulus)        │
-└─────────────────────────────────────────────────────────────┘
-                              │
-┌─────────────────────────────────────────────────────────────┐
-│                      Service Layer                           │
-│                  Api::ThrowClient                            │
-│         (HTTP client with retry + fallback)                  │
-└─────────────────────────────────────────────────────────────┘
-                              │
-┌─────────────────────────────────────────────────────────────┐
-│                      Domain Layer                            │
-│              Game::Throw, Game::Rules, Game::Resolver        │
-│                    (Pure Ruby, no Rails)                     │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         Main Application                                 │
+│                    (GamesController + Views)                            │
+│                                                                          │
+│   ┌─────────────────────┐         ┌─────────────────────────────────┐  │
+│   │   Game:: Aliases    │         │      Api:: Adapter              │  │
+│   │   (Backward Compat) │         │      (Backward Compat)          │  │
+│   └──────────┬──────────┘         └───────────────┬─────────────────┘  │
+└──────────────┼────────────────────────────────────┼─────────────────────┘
+               │                                    │
+               ▼                                    ▼
+┌──────────────────────────────┐    ┌────────────────────────────────────┐
+│        engines/game_core     │    │       engines/opponent_api         │
+│                              │    │                                    │
+│  ┌────────────────────────┐  │    │  ┌──────────────────────────────┐  │
+│  │   GameCore::Domain     │  │    │  │    OpponentApi::Client       │  │
+│  │                        │  │    │  │         (Facade)             │  │
+│  │  • Throw (Value Obj)   │  │    │  └──────────────┬───────────────┘  │
+│  │  • Rules (Registry)    │  │    │                 │                  │
+│  │  • Result (Value Obj)  │  │    │  ┌──────────────▼───────────────┐  │
+│  │  • Resolver (Service)  │  │    │  │   Strategies::Base           │  │
+│  └────────────────────────┘  │    │  │   (Strategy Pattern)         │  │
+│                              │    │  │                              │  │
+│  Pure Ruby - No Rails Deps   │    │  │  ├── Strategies::Http        │  │
+│                              │    │  │  └── Strategies::Fallback    │  │
+└──────────────────────────────┘    │  └──────────────────────────────┘  │
+                                    └────────────────────────────────────┘
 ```
 
-### Domain Layer (`app/models/game/`)
+### Engine: `game_core`
 
-- **`Throw`**: Value object representing a game throw with validation
-- **`Rules`**: Registry defining what beats what (single source of truth)
-- **`Resolver`**: Determines win/lose/tie outcomes using registry lookup
+**Bounded Context**: Core game domain logic
 
-### Service Layer (`app/services/api/`)
+| Component | DDD Pattern | SOLID Principles |
+|-----------|-------------|------------------|
+| `Domain::Throw` | Value Object | SRP, OCP |
+| `Domain::Rules` | Registry/Repository | SRP, OCP, DIP |
+| `Domain::Result` | Value Object | SRP |
+| `Domain::Resolver` | Domain Service | SRP, OCP, DIP |
 
-- **`ThrowClient`**: HTTP client with 5s connect timeout, 10s read timeout, 1 retry on failure, and local fallback
+**Key Characteristics:**
+- Pure Ruby with no Rails dependencies in domain layer
+- Immutable Value Objects (frozen after creation)
+- Single source of truth for game rules
+- Can be extracted as a standalone gem
 
-### Presentation Layer
+### Engine: `opponent_api`
 
-- **`GamesController`**: Thin orchestration layer (no business logic)
-- **Turbo**: Server-side rendering with SPA-like page updates
-- **Stimulus**: Progressive enhancement for loading states and interactivity
+**Bounded Context**: External opponent integration
+
+| Component | Design Pattern | Purpose |
+|-----------|---------------|---------|
+| `Client` | Facade | Simple interface to strategy subsystem |
+| `Strategies::Base` | Template Method | Defines algorithm structure |
+| `Strategies::Http` | Strategy | HTTP API implementation |
+| `Strategies::Fallback` | Strategy | Local random fallback |
+| `Result` | Value Object | Immutable API response |
+
+**Key Characteristics:**
+- Strategy Pattern enables swappable opponent providers
+- Automatic fallback on failure (Chain of Responsibility)
+- Configurable timeouts and retry logic
+- Extensible for new providers (mock, WebSocket, etc.)
+
+## Design Patterns Applied
+
+### 1. Registry Pattern (Game Rules)
+
+```ruby
+# engines/game_core/app/models/game_core/domain/rules.rb
+RULES = {
+  rock: [:scissors],
+  paper: [:rock, :hammer],
+  scissors: [:paper],
+  hammer: [:scissors, :rock]
+}.freeze
+```
+
+**Benefits:**
+- Single source of truth for all game rules
+- Adding throws requires only data changes
+- No conditional logic scattered through codebase
+
+### 2. Value Object Pattern (Throws & Results)
+
+```ruby
+# Immutable, equality by attributes
+throw1 = GameCore::Domain::Throw.new("rock")
+throw2 = GameCore::Domain::Throw.new("rock")
+throw1 == throw2  # => true (same value, different objects)
+throw1.freeze     # Already frozen - immutable by design
+```
+
+**Benefits:**
+- Thread-safe by default
+- Can be used as hash keys
+- Fail-fast validation
+
+### 3. Strategy Pattern (Opponent Generation)
+
+```ruby
+# Swappable strategies
+http_client = OpponentApi::Client.new(strategy: :http)
+fallback_client = OpponentApi::Client.new(strategy: :fallback)
+
+# Both produce the same Result interface
+result = http_client.fetch
+result.throw_name  # => :rock
+result.source      # => :api or :fallback
+```
+
+**Benefits:**
+- Easy to add new opponent sources
+- Testing with mock strategies
+- Runtime strategy selection
+
+### 4. Facade Pattern (API Client)
+
+```ruby
+# Simple interface hides complexity
+result = OpponentApi::Client.fetch
+
+# Behind the scenes:
+# - Selects appropriate strategy
+# - Handles retries
+# - Falls back on failure
+# - Returns consistent Result
+```
+
+### 5. Adapter Pattern (Backward Compatibility)
+
+```ruby
+# app/models/game/throw.rb
+module Game
+  Throw = GameCore::Domain::Throw  # Alias to engine
+end
+
+# Existing code continues to work
+throw = Game::Throw.new("rock")
+```
+
+## SOLID Principles in Action
+
+### Single Responsibility Principle (SRP)
+
+| Class | Single Responsibility |
+|-------|----------------------|
+| `Throw` | Represent a valid throw |
+| `Rules` | Define and query game rules |
+| `Resolver` | Determine game outcomes |
+| `Http` strategy | HTTP communication |
+| `Fallback` strategy | Local random generation |
+
+### Open/Closed Principle (OCP)
+
+```ruby
+# Adding "lizard" and "spock" - NO code changes needed!
+RULES = {
+  rock: [:scissors, :lizard],
+  paper: [:rock, :spock],
+  scissors: [:paper, :lizard],
+  lizard: [:paper, :spock],
+  spock: [:rock, :scissors]
+}.freeze
+# Resolver, Throw, Controller - all unchanged
+```
+
+### Liskov Substitution Principle (LSP)
+
+```ruby
+# Any strategy can substitute another
+def fetch_opponent(strategy)
+  strategy.fetch  # Works with Http, Fallback, or any future strategy
+end
+```
+
+### Interface Segregation Principle (ISP)
+
+```ruby
+# Strategies only implement what they need
+class Strategies::Base
+  def fetch; end        # Required
+  def perform_fetch; end  # Template method
+end
+# No bloated interfaces
+```
+
+### Dependency Inversion Principle (DIP)
+
+```ruby
+# Throw depends on Rules abstraction, not concrete implementation
+class Throw
+  def beats?(other)
+    Rules.beats?(@name, other.name)  # Depends on interface
+  end
+end
+```
 
 ## Development Journey
 
@@ -64,95 +229,7 @@ This project was built incrementally through a series of focused commits:
 | 8 | UI Polish | Styling aligned with Adobe XD mockups |
 | 9 | Extensibility | Added "hammer" throw to demonstrate Open/Closed Principle |
 | 10 | Code Quality | Rubocop linting and style fixes |
-
-## Design Decisions & Rationale
-
-### 1. Registry Pattern for Rules (Open/Closed Principle)
-
-The `Game::Rules` class uses a registry pattern—a hash mapping each throw to what it beats:
-
-```ruby
-RULES = {
-  rock: [:scissors],
-  paper: [:rock, :hammer],
-  scissors: [:paper],
-  hammer: [:scissors, :rock]
-}.freeze
-```
-
-**Why this approach?**
-- **Extensibility**: Adding new throws requires only updating this hash
-- **No scattered conditionals**: No `if/else` or `case` statements throughout the codebase
-- **Single source of truth**: All game rules live in one place
-- **Testability**: Easy to verify all rules with exhaustive tests
-
-### 2. Value Object Pattern for Throws
-
-`Game::Throw` is an immutable value object that validates at creation time:
-
-```ruby
-throw = Game::Throw.new("rock")  # Valid
-throw = Game::Throw.new("invalid")  # Raises ArgumentError
-```
-
-**Benefits:**
-- **Fail-fast validation**: Invalid throws are caught immediately
-- **Immutability**: Once created, a throw cannot change
-- **Equality semantics**: Two throws with the same name are equal
-- **Hash compatibility**: Can be used as hash keys
-
-### 3. Resilient Service Layer with Fallback
-
-`Api::ThrowClient` implements the Circuit Breaker pattern with graceful degradation:
-
-```ruby
-Result = Struct.new(:throw_name, :source, keyword_init: true)
-# source is :api or :fallback
-```
-
-**Resilience features:**
-- **5-second connect timeout**: Fail fast on network issues
-- **10-second read timeout**: Don't block on slow responses
-- **1 automatic retry**: Handle transient failures
-- **Local fallback**: App always works, even offline
-- **Transparent tracking**: UI can show "offline mode" indicator
-
-### 4. Thin Controllers
-
-`GamesController` is only 30 lines and contains no business logic:
-
-```ruby
-def play
-  player_throw = validate_throw_param!
-  opponent_result = Api::ThrowClient.fetch
-  @result = Game::Resolver.new(
-    player_throw: player_throw,
-    opponent_throw: opponent_result.throw_name
-  )
-end
-```
-
-**Why thin controllers?**
-- **Testability**: Domain logic tested without HTTP context
-- **Reusability**: Game logic works in console, background jobs, etc.
-- **Clarity**: Each layer has a single responsibility
-
-### 5. Progressive Enhancement with Stimulus
-
-The application renders everything server-side; JavaScript adds polish:
-
-```javascript
-// Stimulus controller manages:
-// - Loading modal while waiting for API
-// - Button disabled states during submission
-// - Delayed form submission for smooth UX
-```
-
-**Advantages:**
-- **Works without JS**: Core functionality doesn't require JavaScript
-- **SEO-friendly**: Server-rendered content
-- **Accessible**: Forms work with assistive technology
-- **Resilient**: Graceful degradation on JS errors
+| 11 | **Rails Engines** | Extracted domain into modular engines with DDD |
 
 ## Installation
 
@@ -168,7 +245,7 @@ The application renders everything server-side; JavaScript adds polish:
 git clone <repository-url>
 cd rock_paper_scissors
 
-# Install Ruby dependencies
+# Install Ruby dependencies (includes engines)
 bundle install
 
 # Install JavaScript dependencies
@@ -246,7 +323,7 @@ bundle exec rspec spec/requests/games_spec.rb
 
 ### Non-Happy Path Handling
 
-The `Api::ThrowClient` service handles various failure scenarios:
+The `OpponentApi::Client` service handles various failure scenarios:
 
 - **Network timeouts**: 5s connect timeout, 10s read timeout
 - **Automatic retry**: 1 retry on transient failures
@@ -271,7 +348,7 @@ The architecture supports adding new throws without modifying core game logic, f
 
 ### How It Works
 
-Game rules are defined in a registry pattern (`app/models/game/rules.rb`):
+Game rules are defined in a registry pattern (`engines/game_core/app/models/game_core/domain/rules.rb`):
 
 ```ruby
 RULES = {
@@ -281,135 +358,188 @@ RULES = {
 }.freeze
 ```
 
-The `Game::Resolver` uses this registry to determine outcomes—no conditionals or switch statements.
+The `GameCore::Domain::Resolver` uses this registry to determine outcomes—no conditionals or switch statements.
 
 ### Adding Hammer (or any new throw)
 
-1. **Update the rules registry** in `app/models/game/rules.rb`:
+1. **Update the rules registry** in `engines/game_core/app/models/game_core/domain/rules.rb`:
 
 ```ruby
 RULES = {
   rock: [:scissors],
-  paper: [:rock, :hammer],  # Paper now also beats hammer
+  paper: [:rock, :hammer],
   scissors: [:paper],
-  hammer: [:scissors, :rock]  # Hammer beats scissors and rock
+  hammer: [:scissors, :rock]
 }.freeze
 ```
 
 2. **Add an icon partial** at `app/views/games/icons/_hammer.html.erb`
 
-3. **Add the button** to `app/views/games/index.html.erb`:
+3. **Add the button** to `app/views/games/index.html.erb`
 
-```erb
-<button type="submit"
-        name="throw"
-        value="hammer"
-        class="group flex flex-col items-center p-8 rounded-lg hover:bg-gray-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-dark/30 disabled:opacity-30 disabled:cursor-not-allowed"
-        data-game-target="button"
-        data-throw="hammer">
-  <div class="mb-4">
-    <%= render "games/icons/hammer" %>
-  </div>
-  <span class="font-roboto text-purple-dark text-lg capitalize">hammer</span>
-</button>
-```
-
-No changes needed to `Game::Throw`, `Game::Resolver`, or `GamesController`!
+No changes needed to `Throw`, `Resolver`, `Client`, or `GamesController`!
 
 ## Future Improvements
 
-This section outlines potential enhancements organized by category. These suggestions could serve as a roadmap for further development or as inspiration for contributors.
+### Architecture Improvements (Post-Engine Refactor)
+
+Now that the codebase uses Rails Engines, these improvements become easier:
+
+| Improvement | Description | Enabled By |
+|-------------|-------------|------------|
+| **Extract game_core as Gem** | Publish as standalone Ruby gem | Engine isolation |
+| **Multiple API Providers** | Add WebSocket, GraphQL strategies | Strategy Pattern |
+| **Plugin System** | Third-party rule extensions | Registry Pattern |
+| **Microservice Extraction** | Deploy engines independently | Bounded Contexts |
+| **A/B Testing Strategies** | Test different opponent algorithms | Strategy swapping |
+
+### Engine-Specific Improvements
+
+#### `game_core` Engine
+
+| Improvement | Description | Benefit |
+|-------------|-------------|---------|
+| **Aggregate Root** | Wrap Resolver + Result in Game aggregate | DDD completeness |
+| **Domain Events** | Emit events on game completion | Event sourcing readiness |
+| **Rule Validators** | Validate rule consistency (no cycles) | Data integrity |
+| **Serializers** | JSON/YAML rule import/export | Configuration flexibility |
+| **Game Variants** | Named rulesets (classic, lizard-spock) | Product variants |
+
+#### `opponent_api` Engine
+
+| Improvement | Description | Benefit |
+|-------------|-------------|---------|
+| **Circuit Breaker** | Use `circuitbox` gem for smarter failures | Better resilience |
+| **Strategy Registry** | Dynamic strategy registration | Plugin architecture |
+| **Caching Strategy** | Cache API responses briefly | Performance |
+| **Mock Strategy** | Deterministic testing strategy | Test reliability |
+| **Metrics Strategy** | Decorator for observability | Monitoring |
+
+### DDD & Pattern Improvements
+
+| Pattern | Current | Future Enhancement |
+|---------|---------|-------------------|
+| **Aggregates** | Not used | Add Game aggregate containing Throws + Result |
+| **Domain Events** | Not used | GamePlayed, GameWon events for analytics |
+| **Specification** | Not used | Rule validation specs |
+| **Repository** | Partial (Rules) | Full repository for persisted games |
+| **Factory** | Basic | Abstract factory for game variants |
+
+### SOLID Improvements
+
+| Principle | Current State | Improvement |
+|-----------|---------------|-------------|
+| **SRP** | Good | Extract HTTP concerns from strategy |
+| **OCP** | Excellent | Add rule validation hooks |
+| **LSP** | Good | Add strategy interface tests |
+| **ISP** | Good | Split Result into ApiResult/FallbackResult |
+| **DIP** | Good | Inject Rules dependency |
 
 ### Feature Enhancements
 
 | Improvement | Description | Complexity |
 |-------------|-------------|------------|
-| **Game History** | Persist game results to database, show win/loss statistics | Medium |
-| **User Accounts** | Authentication with Devise, personal stats tracking | Medium |
-| **Multiplayer Mode** | Real-time player-vs-player using Action Cable WebSockets | High |
-| **Lizard-Spock Variant** | Add "Lizard" and "Spock" throws (Big Bang Theory rules) | Low |
-| **Leaderboard** | Global rankings based on win rate or streaks | Medium |
-| **Game Replays** | View history of past games with timestamps | Low |
+| **Game History** | Persist game results to database | Medium |
+| **User Accounts** | Authentication with Devise, personal stats | Medium |
+| **Multiplayer Mode** | Real-time player-vs-player using Action Cable | High |
+| **Lizard-Spock Variant** | Add "Lizard" and "Spock" throws | Low |
+| **Leaderboard** | Global rankings based on win rate | Medium |
+| **Game Replays** | View history of past games | Low |
 
 ### Technical Improvements
 
 | Improvement | Description | Benefit |
 |-------------|-------------|---------|
-| **System Tests** | Add Capybara tests for full browser automation | End-to-end confidence |
-| **JavaScript Tests** | Jest tests for Stimulus controllers | Frontend reliability |
-| **API Circuit Breaker** | Use gems like `circuitbox` for smarter failure handling | Better resilience |
-| **Response Caching** | Cache API responses briefly to reduce latency | Performance |
-| **Request Logging** | Structured logging with correlation IDs | Observability |
-| **Health Check Endpoint** | `/health` endpoint for monitoring | DevOps readiness |
+| **Engine Tests** | Dedicated specs inside each engine | Isolation |
+| **System Tests** | Capybara browser automation | E2E confidence |
+| **OpenAPI Spec** | Document internal engine APIs | Developer experience |
+| **Type Checking** | Sorbet/RBS annotations | Type safety |
+| **Mutation Testing** | Mutant gem for test quality | Test effectiveness |
 
 ### Infrastructure & DevOps
 
 | Improvement | Description | Benefit |
 |-------------|-------------|---------|
-| **Docker Support** | Dockerfile and docker-compose for containerized deployment | Portability |
-| **CI/CD Pipeline** | GitHub Actions for automated testing and deployment | Automation |
-| **Error Tracking** | Integration with Sentry or Honeybadger | Production visibility |
-| **Performance Monitoring** | APM with Skylight or New Relic | Performance insights |
-| **Staging Environment** | Heroku/Render staging app for pre-production testing | Safer deployments |
+| **Docker Support** | Multi-stage build with engines | Portability |
+| **CI Matrix** | Test each engine independently | Faster CI |
+| **Engine Versioning** | Semantic versioning per engine | Change management |
+| **Health Checks** | Per-engine health endpoints | Observability |
 
-### User Experience
-
-| Improvement | Description | Benefit |
-|-------------|-------------|---------|
-| **Sound Effects** | Audio feedback for wins, losses, and throws | Engagement |
-| **Animations** | CSS/JS animations for throw reveals | Polish |
-| **Dark Mode** | Toggle between light and dark themes | Accessibility |
-| **Internationalization** | i18n support for multiple languages | Global reach |
-| **Mobile PWA** | Progressive Web App with offline support | Mobile experience |
-| **Keyboard Shortcuts** | Press R/P/S keys to select throws | Power users |
-
-### Code Quality
-
-| Improvement | Description | Benefit |
-|-------------|-------------|---------|
-| **Test Coverage Reporting** | SimpleCov integration with coverage thresholds | Quality metrics |
-| **API Documentation** | OpenAPI/Swagger spec for the game endpoint | Developer experience |
-| **Type Checking** | Sorbet or RBS for Ruby type annotations | Type safety |
-| **Mutation Testing** | Mutant gem to verify test effectiveness | Test quality |
-| **Performance Benchmarks** | Benchmark scripts for critical paths | Regression prevention |
-
-### Quick Wins (Good First Issues)
-
-These improvements are ideal for contributors getting started:
-
-1. **Add favicon** - Custom rock-paper-scissors favicon
-2. **Meta tags** - Open Graph tags for social sharing
-3. **404 page** - Custom error page matching the design
-4. **Loading skeleton** - Skeleton UI while page loads
-5. **Tooltip hints** - Hover tooltips explaining game rules
-
-### Architecture Evolution
-
-For a production-scale application, consider:
+### Architecture Evolution Roadmap
 
 ```
-Current: Monolith (Rails MVC)
+Current: Modular Monolith (Rails Engines)
     │
-    ▼
-Phase 1: Add Background Jobs (Sidekiq)
-    - Async API calls
-    - Email notifications for achievements
+    ├─── Near Term ───────────────────────────────────────┐
+    │    • Extract game_core as gem (reuse in CLI, mobile) │
+    │    • Add Domain Events for analytics                │
+    │    • Implement Circuit Breaker in opponent_api      │
+    └─────────────────────────────────────────────────────┘
     │
-    ▼
-Phase 2: Extract Game Service
-    - Separate game logic into a service
-    - Enable multiple frontends (web, mobile API)
+    ├─── Medium Term ─────────────────────────────────────┐
+    │    • Add Game aggregate with persistence            │
+    │    • WebSocket strategy for real-time opponents     │
+    │    • Rule variants (classic, extended, custom)      │
+    └─────────────────────────────────────────────────────┘
     │
-    ▼
-Phase 3: Event-Driven Architecture
-    - Publish game events to message queue
-    - Analytics, achievements, notifications as consumers
+    └─── Long Term ───────────────────────────────────────┐
+         • Event-sourced game history                     │
+         • Microservice extraction (game-service)        │
+         • Multi-tenant rule customization               │
+         └────────────────────────────────────────────────┘
 ```
 
 ## Tech Stack
 
 - **Rails 8** - Modern Ruby web framework
+- **Rails Engines** - Modular architecture with isolated bounded contexts
 - **Hotwire (Turbo + Stimulus)** - SPA-like interactivity without heavy JavaScript
 - **Tailwind CSS 4** - Utility-first styling matching the mockup
 - **TypeScript** - Type-safe JavaScript for Stimulus controllers
 - **RSpec** - Testing framework with WebMock for API mocking
+
+## File Structure
+
+```
+rock_paper_scissors/
+├── app/
+│   ├── controllers/
+│   │   └── games_controller.rb      # Thin orchestration layer
+│   ├── models/game/                 # Backward-compatible aliases
+│   │   ├── throw.rb                 # → GameCore::Domain::Throw
+│   │   ├── rules.rb                 # → GameCore::Domain::Rules
+│   │   └── resolver.rb              # → GameCore::Domain::Resolver
+│   ├── services/api/
+│   │   └── throw_client.rb          # Adapter → OpponentApi::Client
+│   └── views/games/
+│
+├── engines/
+│   ├── game_core/                   # Domain Logic Engine
+│   │   ├── app/models/game_core/
+│   │   │   ├── domain.rb            # Namespace
+│   │   │   └── domain/
+│   │   │       ├── throw.rb         # Value Object
+│   │   │       ├── rules.rb         # Registry
+│   │   │       ├── result.rb        # Value Object
+│   │   │       └── resolver.rb      # Domain Service
+│   │   ├── lib/game_core/
+│   │   │   └── engine.rb
+│   │   └── game_core.gemspec
+│   │
+│   └── opponent_api/                # API Integration Engine
+│       ├── app/services/opponent_api/
+│       │   ├── client.rb            # Facade
+│       │   ├── result.rb            # Value Object
+│       │   └── strategies/
+│       │       ├── base.rb          # Template Method
+│       │       ├── http.rb          # HTTP Strategy
+│       │       └── fallback.rb      # Fallback Strategy
+│       ├── lib/opponent_api/
+│       │   └── engine.rb
+│       └── opponent_api.gemspec
+│
+└── spec/
+    ├── models/game/                 # Tests via aliases (backward compat)
+    ├── services/api/
+    └── requests/
+```

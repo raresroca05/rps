@@ -1,3 +1,16 @@
+PATH
+  remote: engines/game_core
+  specs:
+    game_core (0.1.0)
+      rails (>= 7.0)
+
+PATH
+  remote: engines/opponent_api
+  specs:
+    opponent_api (0.1.0)
+      game_core
+      rails (>= 7.0)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -396,9 +409,11 @@ DEPENDENCIES
   bundler-audit
   cssbundling-rails
   debug
+  game_core!
   image_processing (~> 1.2)
   jsbundling-rails
   kamal
+  opponent_api!
   propshaft
   puma (>= 5.0)
   rails (~> 8.1.2)
