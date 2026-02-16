@@ -44,7 +44,7 @@ module OpponentApi
     alias eql? ==
 
     def hash
-      [throw_name, source].hash
+      [ throw_name, source ].hash
     end
 
     private

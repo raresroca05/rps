@@ -3,7 +3,7 @@
 Gem::Specification.new do |spec|
   spec.name        = "game_core"
   spec.version     = "0.1.0"
-  spec.authors     = ["Rock Paper Scissors Team"]
+  spec.authors     = [ "Rock Paper Scissors Team" ]
   spec.summary     = "Core game domain logic for Rock Paper Scissors"
   spec.description = "A Rails Engine containing the domain layer for Rock Paper Scissors game logic. " \
                      "Implements DDD patterns including Value Objects, Domain Services, and Registry Pattern."

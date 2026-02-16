@@ -76,7 +76,7 @@ module GameCore
       alias eql? ==
 
       def hash
-        [player_throw, opponent_throw, outcome].hash
+        [ player_throw, opponent_throw, outcome ].hash
       end
 
       private
